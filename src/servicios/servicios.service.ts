@@ -30,8 +30,9 @@ export class ServiciosService {
 
   }
 
-  findAll() {
-    return `This action returns all servicios`;
+  async findAll() {
+
+    return await this.servicioRepository.find();
   }
 
   async findOne(id: string) {
