@@ -11,6 +11,7 @@ import { Producto } from './entities/producto.entity';
 import { IngredientesReceta, ProductoPreparado } from './entities/producto-preparado.entity';
 import { ProductoPreparadoMapper } from './producto.mapper';
 import { ProductoIngredienteSchema } from './entities/schemas/prodcuto-ingredientes.schema';
+import { ProductoInventarioShema } from './entities/schemas/producto-inventario.shema';
 
 @Injectable()
 export class ProductosService {
@@ -19,11 +20,13 @@ export class ProductosService {
     @InjectRepository(ProductoSchema)
     private productoRepository: Repository<ProductoSchema>,
     @InjectRepository(ProductoIngredienteSchema)
-    private productoIngrediente: Repository<ProductoIngredienteSchema>,
+    private productoIngredienteRepository: Repository<ProductoIngredienteSchema>,
+    @InjectRepository(ProductoInventarioShema)
+    private inventarioRepository: Repository<ProductoInventarioShema>,
     private ingredienteService: IngredientesService
   ) { }
   async create(createProductoDto: CreateProductoDto) {
-    const { receta, stock, SKU, ...data } = createProductoDto;
+    const { receta, stock = 0, stock_min = 0, SKU, ...data } = createProductoDto;
 
     try {
       if (receta) {
@@ -36,65 +39,84 @@ export class ProductosService {
         const producto = await this.productoRepository.save(ProductoPreparadoMapper.toSchema(productoPreparado));
 
         await Promise.all(ingredientesReceta.map(async (ingtoP) => {
-          const db = this.productoIngrediente.create({
+          const db = this.productoIngredienteRepository.create({
             cantidad: ingtoP.cantidad,
             ingrediente: ingtoP.Ingrediente,
             producto: producto
           });
 
-          await this.productoIngrediente.save(db);
+          await this.productoIngredienteRepository.save(db);
         }));
 
         return productoPreparado;
       } else {
-        const producto = await this.productoRepository.save(new Producto(data.nombre, data.descripcion, data.precio, stock, SKU));
-        return producto;
+        const productoSave = await this.productoRepository.save(new Producto(data.nombre, data.descripcion, data.precio, SKU));
+        const inventarioModl = this.inventarioRepository.create({
+          stock: stock,
+          stock_min: stock_min,
+          producto: productoSave
+        })
+        const { producto, ...inve } = await this.inventarioRepository.save(inventarioModl)
+        return {
+          ...producto,
+          ...inve
+        };
       }
     } catch (error) {
       handleDBexceptions(error, this.logger);
     }
   }
 
-
-  async findAll() {
-
-    const prodcutos = await this.productoRepository.find();
-
-    const pormes = prodcutos.map(async (pro) => {
-
-      const ing = await this.productoIngrediente.find({
-        where: {
-          producto: { id_producto: pro.id_producto }
-        }
-      })
-
+  async findAllProductos() {
+    const inventarios = await this.inventarioRepository.find()
+    const mapdata = inventarios.map((inv) => {
+      const { producto, ...data } = inv
       return {
-        ...pro,
-        receta: ing ?? []
+        ...producto,
+        ...data
       }
-
     })
 
-    const productos = await Promise.all(pormes)
+    return mapdata
+  }
+  async findAllProductosPreparados() {
 
-    // Filtrar los productos que tienen una receta definida
-    const productosConReceta = productos.filter(producto => producto.receta.length > 0);
 
-    // Mapear los productos para eliminar la propiedad `receta` de aquellos que no la tienen
-    const productosSinReceta = productos.map(producto => {
-      if (producto.receta.length === 0) {
-        const { receta, ...productoSinReceta } = producto;
-        return productoSinReceta;
-      } else {
-        return producto;
+    const productosPreparados = await this.productoIngredienteRepository.find()
+    // Mapa para almacenar productos únicos
+    const productosUnicos = new Map<string, ProductoPreparado>();
+
+    // Procesar los resultados para obtener una lista de productos únicos con sus ingredientes
+    productosPreparados.forEach((productoPreparado) => {
+      const dbp = productoPreparado.producto
+      const productoId = dbp.id_producto;
+
+      // Si el producto no está en el mapa, agregarlo con sus ingredientes
+      if (!productosUnicos.has(productoId)) {
+        const producto = new ProductoPreparado(
+          dbp.nombre,
+          dbp.descripcion,
+          dbp.precio,
+          []
+        )
+        productosUnicos.set(productoId, producto);
       }
+
+      // Obtener el producto del mapa y agregar el ingrediente
+      const producto = productosUnicos.get(productoId);
+      producto.ingredientes.push({
+        Ingrediente: productoPreparado.ingrediente,
+        cantidad: productoPreparado.cantidad,
+      });
+
+      // Actualizar el producto en el mapa
+      productosUnicos.set(productoId, producto);
     });
 
-    // Combinar los productos con receta y los productos sin receta en un solo arreglo
-    const productosFinal = [...productosConReceta, ...productosSinReceta];
+    // Convertir los valores del mapa a un array
+    const productosArray = Array.from(productosUnicos.values());
 
-
-    return productosFinal
+    return productosArray;
   }
 
   async findOne(id: string) {

@@ -14,7 +14,11 @@ export class ProductosController {
 
   @Get()
   findAll() {
-    return this.productosService.findAll();
+    return this.productosService.findAllProductos();
+  }
+  @Get("/preparados")
+  findAllPreparados() {
+    return this.productosService.findAllProductosPreparados();
   }
 
   @Get(':id')

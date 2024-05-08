@@ -1,6 +1,7 @@
 import { Estados_Entidades } from "src/shared/helpers/estado-producto.enum";
-import { Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { ProductoIngredienteSchema } from "./prodcuto-ingredientes.schema";
+import { ProductoInventarioShema } from "./producto-inventario.shema";
 @Entity('producto')
 export class ProductoSchema {
     @PrimaryGeneratedColumn('uuid')
@@ -17,9 +18,6 @@ export class ProductoSchema {
 
     @Column('money')
     precio: number;
-
-    @Column('float')
-    stock: number;
 
     @CreateDateColumn()
     create_at: Date;

@@ -6,7 +6,7 @@ export class ProductoIngredienteSchema {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @ManyToOne(() => ProductoSchema, producto => producto.ingredientes)
+    @ManyToOne(() => ProductoSchema, producto => producto.ingredientes, { eager: true })
     @JoinColumn({ name: 'id_producto' })
     producto: ProductoSchema;
 

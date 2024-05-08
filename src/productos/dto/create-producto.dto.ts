@@ -22,7 +22,9 @@ export class CreateProductoDto {
     @IsOptional()
     @IsNumber()
     stock?: number;
-
+    @IsOptional()
+    @IsNumber()
+    stock_min?: number;
     @IsOptional()
     @IsArray()
     @ArrayMinSize(1)
