@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { IngredientesService } from 'src/ingredientes/ingredientes.service';
 import { Ingrediente } from 'src/ingredientes/entities/ingrediente.entity';
 import { handleDBexceptions } from 'src/shared/helpers/handleDBexception.method';
@@ -14,6 +14,7 @@ import { ProductoIngredienteSchema } from './entities/schemas/prodcuto-ingredien
 import { ProductoInventarioShema } from './entities/schemas/producto-inventario.shema';
 import { ResponceUserDto } from 'src/usuarios/dto/responce-user.dto';
 import { ResponseProductoDTO } from './dto/response-producto.dto';
+import { Estados_Entidades } from 'src/shared/helpers/estado-producto.enum';
 
 @Injectable()
 export class ProductosService {
@@ -25,7 +26,9 @@ export class ProductosService {
     private productoIngredienteRepository: Repository<ProductoIngredienteSchema>,
     @InjectRepository(ProductoInventarioShema)
     private inventarioRepository: Repository<ProductoInventarioShema>,
-    private ingredienteService: IngredientesService
+    private ingredienteService: IngredientesService,
+    private readonly dataSourse: DataSource
+
   ) { }
   async create(createProductoDto: CreateProductoDto) {
     const { receta, stock = 0, stock_min = 0, SKU, ...data } = createProductoDto;
@@ -99,22 +102,91 @@ export class ProductosService {
   }
 
   async findOneProducto(id: string) {
+    const query = await this.productoRepository.findOne({
+      loadEagerRelations: false,
+      join: {
+        alias: "producto",
+        innerJoinAndSelect: {
+          ProductoInventario: "producto.inventario",
+        },
 
-    const query = await this.inventarioRepository.findOneBy({ producto: { id_producto: id } })
-    const res = ResponseProductoDTO.bdtoResponse(query)
-    return res
+      },
+      where: {
+        id_producto: id
+      }
+    })
+
+    return query
   }
 
   async findOneProductoPreparado(id: string) {
-    const query = await this.productoIngredienteRepository.findOneBy({ producto: { id_producto: id } })
-    console.log(query)
+    const query = await this.productoRepository.findOne({
+      join: {
+        alias: "producto",
+        innerJoinAndSelect: {
+          productoIngredientes: "producto.receta",
+        },
+      },
+      where: {
+        id_producto: id
+      }
+    })
+
+    return query
   }
 
-  update(id: string, updateProductoDto: UpdateProductoDto) {
-    return `This action updates a #${id} producto`;
+  async update(id: string, updateProductoDto: UpdateProductoDto) {
+    const { receta, stock, stock_min, ...data } = updateProductoDto;
+    const queryRunner = this.dataSourse.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const producto = await this.productoRepository.preload({
+        id_producto: id,
+        ...data,
+      });
+
+      if (!producto) {
+        throw new Error(`Producto no encontrado`);
+      }
+
+      if (receta) {
+        await queryRunner.manager.delete(ProductoIngredienteSchema, { producto: { id_producto: id } });
+
+        for (const tar of receta) {
+          const ing = await this.ingredienteService.findOne(tar.id_ingrediente);
+          const productoIngrediente = queryRunner.manager.create(ProductoIngredienteSchema, {
+            cantidad: tar.cantidad_usada,
+            ingrediente: ing,
+            producto: producto
+          });
+          await queryRunner.manager.save(productoIngrediente);
+        }
+
+        console.log("actualizo producto prepa");
+      } else {
+        const inventarioProducto = await queryRunner.manager.findOneBy(ProductoInventarioShema, {
+          producto: { id_producto: id }
+        })
+        inventarioProducto.stock = stock ? stock : inventarioProducto.stock
+        inventarioProducto.stock_min = stock_min ? stock_min : inventarioProducto.stock_min
+        await queryRunner.manager.save(inventarioProducto);
+      }
+
+      await queryRunner.manager.save(producto);
+      await queryRunner.commitTransaction();
+      console.log("Producto actualizado correctamente");
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.log(error);
+      throw new BadRequestException(error.message);
+    } finally {
+      await queryRunner.release();
+    }
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} producto`;
+  async remove(id: string) {
+    return await this.update(id, { estado: Estados_Entidades.INACTIVO })
   }
 }

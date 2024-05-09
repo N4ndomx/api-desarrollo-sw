@@ -6,5 +6,5 @@ import { Estados_Entidades } from 'src/shared/helpers/estado-producto.enum';
 export class UpdateProductoDto extends PartialType(CreateProductoDto) {
     @IsOptional()
     @IsEnum(Estados_Entidades)
-    estado?: string
+    estado?: Estados_Entidades
 }
