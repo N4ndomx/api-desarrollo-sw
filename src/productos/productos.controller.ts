@@ -20,10 +20,14 @@ export class ProductosController {
   findAllPreparados() {
     return this.productosService.findAllProductosPreparados();
   }
+  @Get('/preparados/:id')
+  findOnePreparado(@Param('id', ParseUUIDPipe) id: string) {
+    return this.productosService.findOneProductoPreparado(id);
+  }
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.productosService.findOne(id);
+    return this.productosService.findOneProducto(id);
   }
 
   @Patch(':id')

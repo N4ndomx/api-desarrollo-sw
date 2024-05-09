@@ -2,6 +2,7 @@ import { Estados_Entidades } from "src/shared/helpers/estado-producto.enum";
 
 
 export class Producto {
+    id_producto: string
     nombre: string;
     descripcion: string;
     SKU: string
@@ -10,12 +11,13 @@ export class Producto {
     modified_at: Date;
     estado: Estados_Entidades;
 
-    constructor(nombre: string, descripcion: string, precio: number, SKU?: string) {
+    constructor(nombre: string, descripcion: string, precio: number, SKU?: string, id?: string) {
         this.nombre = nombre;
         this.descripcion = descripcion
         this.precio = precio;
         this.SKU = SKU ?? this.generarSKU(nombre)
         this.estado = Estados_Entidades.ACTIVO
+        this.id_producto = id
     }
 
 

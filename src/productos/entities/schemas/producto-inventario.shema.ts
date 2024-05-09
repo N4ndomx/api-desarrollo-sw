@@ -1,7 +1,7 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { ProductoSchema } from "./producto.schema";
 
-@Entity('ProductoInventario')
+@Entity('producto_inventario')
 export class ProductoInventarioShema {
     @PrimaryGeneratedColumn('uuid')
     id_producto_inventario: string

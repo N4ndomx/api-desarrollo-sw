@@ -12,6 +12,8 @@ import { IngredientesReceta, ProductoPreparado } from './entities/producto-prepa
 import { ProductoPreparadoMapper } from './producto.mapper';
 import { ProductoIngredienteSchema } from './entities/schemas/prodcuto-ingredientes.schema';
 import { ProductoInventarioShema } from './entities/schemas/producto-inventario.shema';
+import { ResponceUserDto } from 'src/usuarios/dto/responce-user.dto';
+import { ResponseProductoDTO } from './dto/response-producto.dto';
 
 @Injectable()
 export class ProductosService {
@@ -32,17 +34,18 @@ export class ProductosService {
       if (receta) {
         const ingredientesReceta: IngredientesReceta[] = await Promise.all(receta.map(async (ing) => {
           const ingrediente = await this.ingredienteService.findOne(ing.id_ingrediente);
-          return { Ingrediente: ingrediente, cantidad: ing.cantidad_usada };
+          return { ingrediente: ingrediente, cantidad: ing.cantidad_usada };
         }));
 
         const productoPreparado = new ProductoPreparado(data.nombre, data.descripcion, data.precio, ingredientesReceta);
         const producto = await this.productoRepository.save(ProductoPreparadoMapper.toSchema(productoPreparado));
+        productoPreparado.id_producto = producto.id_producto
 
         await Promise.all(ingredientesReceta.map(async (ingtoP) => {
           const db = this.productoIngredienteRepository.create({
             cantidad: ingtoP.cantidad,
-            ingrediente: ingtoP.Ingrediente,
-            producto: producto
+            ingrediente: ingtoP.ingrediente,
+            producto: { id_producto: producto.id_producto }
           });
 
           await this.productoIngredienteRepository.save(db);
@@ -68,59 +71,43 @@ export class ProductosService {
   }
 
   async findAllProductos() {
-    const inventarios = await this.inventarioRepository.find()
-    const mapdata = inventarios.map((inv) => {
-      const { producto, ...data } = inv
-      return {
-        ...producto,
-        ...data
-      }
+
+    const query = await this.productoRepository.find({
+      loadEagerRelations: false,
+      join: {
+        alias: "producto",
+        innerJoinAndSelect: {
+          ProductoInventario: "producto.inventario",
+        },
+
+      },
     })
 
-    return mapdata
+    return query
   }
   async findAllProductosPreparados() {
 
-
-    const productosPreparados = await this.productoIngredienteRepository.find()
-    // Mapa para almacenar productos únicos
-    const productosUnicos = new Map<string, ProductoPreparado>();
-
-    // Procesar los resultados para obtener una lista de productos únicos con sus ingredientes
-    productosPreparados.forEach((productoPreparado) => {
-      const dbp = productoPreparado.producto
-      const productoId = dbp.id_producto;
-
-      // Si el producto no está en el mapa, agregarlo con sus ingredientes
-      if (!productosUnicos.has(productoId)) {
-        const producto = new ProductoPreparado(
-          dbp.nombre,
-          dbp.descripcion,
-          dbp.precio,
-          []
-        )
-        productosUnicos.set(productoId, producto);
-      }
-
-      // Obtener el producto del mapa y agregar el ingrediente
-      const producto = productosUnicos.get(productoId);
-      producto.ingredientes.push({
-        Ingrediente: productoPreparado.ingrediente,
-        cantidad: productoPreparado.cantidad,
-      });
-
-      // Actualizar el producto en el mapa
-      productosUnicos.set(productoId, producto);
-    });
-
-    // Convertir los valores del mapa a un array
-    const productosArray = Array.from(productosUnicos.values());
-
-    return productosArray;
+    const query = await this.productoRepository.find({
+      join: {
+        alias: "producto",
+        innerJoinAndSelect: {
+          productoIngredientes: "producto.receta",
+        },
+      },
+    })
+    return query
   }
 
-  async findOne(id: string) {
-    return await this.productoRepository.findOneBy({});
+  async findOneProducto(id: string) {
+
+    const query = await this.inventarioRepository.findOneBy({ producto: { id_producto: id } })
+    const res = ResponseProductoDTO.bdtoResponse(query)
+    return res
+  }
+
+  async findOneProductoPreparado(id: string) {
+    const query = await this.productoIngredienteRepository.findOneBy({ producto: { id_producto: id } })
+    console.log(query)
   }
 
   update(id: string, updateProductoDto: UpdateProductoDto) {

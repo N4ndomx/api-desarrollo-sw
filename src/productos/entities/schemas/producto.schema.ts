@@ -28,8 +28,11 @@ export class ProductoSchema {
     @Column('enum', { enum: Estados_Entidades, default: Estados_Entidades.ACTIVO })
     estado?: Estados_Entidades;
 
-    @OneToMany(() => ProductoIngredienteSchema, productoIngrediente => productoIngrediente.producto)
-    ingredientes?: ProductoIngredienteSchema[];
+    @OneToMany(() => ProductoIngredienteSchema, productoIngrediente => productoIngrediente.producto, { eager: true })
+    receta?: ProductoIngredienteSchema[];
+
+    @OneToOne(() => ProductoInventarioShema, inv => inv.producto)
+    inventario: ProductoInventarioShema
 
 
 }
