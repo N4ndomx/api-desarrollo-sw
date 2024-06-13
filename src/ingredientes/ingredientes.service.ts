@@ -37,7 +37,8 @@ export class IngredientesService {
     let nuevoStok: number = ing.stock
     if (agregar_stock) {
       nuevoStok = nuevoStok + agregar_stock
-    } else if (stock) {
+    } else if (stock >= 0) {
+      console.log("nuevo ")
       nuevoStok = stock
     }
     const ingrediente = await this.ingredientRepository.preload({
