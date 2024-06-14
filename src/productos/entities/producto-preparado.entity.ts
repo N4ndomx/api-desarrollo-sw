@@ -15,7 +15,6 @@ export class ProductoPreparado extends Producto {
 
     // Método para preparar un cierto número de unidades del producto preparado
     preparar(cantidad: number): boolean {
-
         let puedo: boolean = true
         let preparados = 1
         for (; preparados <= cantidad && puedo; preparados++) {

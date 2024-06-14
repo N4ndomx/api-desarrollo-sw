@@ -11,5 +11,6 @@ import { ProductoInventarioShema } from './entities/schemas/producto-inventario.
   imports: [IngredientesModule, TypeOrmModule.forFeature([ProductoSchema, ProductoIngredienteSchema, ProductoInventarioShema])],
   controllers: [ProductosController],
   providers: [ProductosService],
+  exports: [TypeOrmModule]
 })
 export class ProductosModule { }
