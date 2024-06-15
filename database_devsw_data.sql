@@ -21,6 +21,8 @@ SET row_security = off;
 --
 
 COPY public.cuenta (id_cuenta, titular, fecha_apert, estado) FROM stdin;
+25f5738b-af9b-4560-a78d-8109cf75f9e6	Emma	2024-06-14 07:41:26.967034+00	ACTIVA
+3e85bd92-b172-403c-9b9d-d8054f6d8a17	Cris	2024-06-15 01:29:57.116611+00	ACTIVA
 \.
 
 
@@ -47,7 +49,30 @@ accce6bc-950b-491a-a3a4-523af2a62ff7	Chocomilk	leche con chocholate	CHOCOM-375	$
 -- Data for Name: cuenta_producto; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.cuenta_producto (id_cuenta_prod, cantidad, fecha_registro, "cuentaIdCuenta", "productIdProducto") FROM stdin;
+COPY public.cuenta_producto (id_cuenta_prod, cantidad, fecha_registro, "cuentaIdCuenta", "productIdProducto", pagado) FROM stdin;
+48dca8ac-a2f7-47e2-bc82-5f1f4b79a04d	19	2024-06-14 20:09:25.964257	25f5738b-af9b-4560-a78d-8109cf75f9e6	6d6d448e-82a2-47d3-82bc-56b3131b160e	f
+b7b593ad-85ca-4aa4-a871-838f4d38405a	1	2024-06-15 01:32:53.912516	3e85bd92-b172-403c-9b9d-d8054f6d8a17	113f8bf1-60e0-47c1-ae3a-f9160ebe01df	f
+d0e278af-4064-44c4-80e0-25839a9ae89b	2	2024-06-14 07:41:58.534077	25f5738b-af9b-4560-a78d-8109cf75f9e6	f0cd9953-b7ff-4bde-a16f-e91527794191	f
+\.
+
+
+--
+-- Data for Name: servicio; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.servicio (id_service, nombre, descripcion) FROM stdin;
+03cd1bbc-9d15-4afe-b114-e18643b6229c	Acceso a Internet	Acceso a internet de alta velocidad
+a915c222-f2f5-4bc9-bcbe-75dedbfca693	Renta de Mesa de Billar	Disfruta de una partida de billar con tus amigos
+aebd1b90-95cc-4b3c-97a6-fdd8e7ae50ad	Renta de Computadoras	Navega por la red con la renta de una lap
+\.
+
+
+--
+-- Data for Name: cuenta_servicio; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.cuenta_servicio (id_cuenta_prod, "cuentaIdCuenta", "servicoIdService", fecha_inicio_servicio, pagado) FROM stdin;
+785cf7ae-0b42-46c2-bda3-01fed4eb31ee	25f5738b-af9b-4560-a78d-8109cf75f9e6	03cd1bbc-9d15-4afe-b114-e18643b6229c	2024-06-14 08:58:41.914579	f
 \.
 
 
@@ -57,12 +82,12 @@ COPY public.cuenta_producto (id_cuenta_prod, cantidad, fecha_registro, "cuentaId
 
 COPY public.ingrediente (id_ingrediente, nombre, unidad_medida, estado, stock, stock_min, create_at, modified_at) FROM stdin;
 f1de1e9d-3864-49b9-9b67-4400227137cf	Pan	UNIDAD	ACTIVO	500	50	2024-06-14 01:06:10.84702	2024-06-14 01:06:10.84702
-5e76f090-5f58-4f27-9878-959666d4ecd5	Leche	LITROS	ACTIVO	200	30	2024-06-14 01:06:30.425648	2024-06-14 01:06:30.425648
-10bd0aa9-8de0-4308-9e1c-8ad7c858188f	Arroz	KILOGRAMOS	ACTIVO	300	40	2024-06-14 01:06:51.899099	2024-06-14 01:06:51.899099
 5f972651-66e9-4583-96a4-23e92025c2af	Huevos	UNIDAD	ACTIVO	1000	100	2024-06-14 01:07:02.730285	2024-06-14 01:07:02.730285
-43f501ad-18cb-4d49-a32c-4e02d0082d91	Manzanas	KILOGRAMOS	ACTIVO	150	20	2024-06-14 01:07:30.489881	2024-06-14 01:07:30.489881
 3425ebad-4366-4105-b693-477ed844ee44	Esensia de Chocolate	MILILITROS	ACTIVO	1000	20	2024-06-14 01:08:17.555433	2024-06-14 01:08:17.555433
-796fc693-1595-480b-b156-8b655b0421b2	Queso	GRAMOS	ACTIVO	50	20	2024-06-14 01:12:44.573922	2024-06-14 01:12:44.573922
+5e76f090-5f58-4f27-9878-959666d4ecd5	Leche	LITROS	ACTIVO	160	30	2024-06-14 01:06:30.425648	2024-06-15 01:18:42.237598
+10bd0aa9-8de0-4308-9e1c-8ad7c858188f	Arroz	KILOGRAMOS	ACTIVO	280	40	2024-06-14 01:06:51.899099	2024-06-15 01:18:42.238086
+43f501ad-18cb-4d49-a32c-4e02d0082d91	Manzanas	KILOGRAMOS	ACTIVO	50	20	2024-06-14 01:07:30.489881	2024-06-14 01:07:30.489881
+796fc693-1595-480b-b156-8b655b0421b2	Queso	GRAMOS	ACTIVO	500	20	2024-06-14 01:12:44.573922	2024-06-14 01:12:44.573922
 \.
 
 
@@ -86,13 +111,13 @@ ce023753-ed02-4732-aad3-f7fe7f4dceae	5	accce6bc-950b-491a-a3a4-523af2a62ff7	3425
 --
 
 COPY public.producto_inventario (id_producto_inventario, stock, stock_min, modified_inven, "productoIdProducto") FROM stdin;
-4c61825b-98b5-4fca-9a83-bea1e1aa136a	50	0	2024-06-14 01:09:15.008527	f0cd9953-b7ff-4bde-a16f-e91527794191
 8b2bed46-9aa4-474c-8a3c-95e7804ee5e3	200	0	2024-06-14 01:09:24.683813	00feb13d-ff26-4ef5-b88f-16a726634486
-8fe1ae47-1587-49ba-85f1-28d46b02ee35	150	0	2024-06-14 01:09:36.208946	113f8bf1-60e0-47c1-ae3a-f9160ebe01df
 12ba04bf-d828-48d3-af75-fe907595db12	120	0	2024-06-14 01:09:44.92339	47ab950d-3c47-4c94-99d0-46178af0cdeb
 fda48e46-f5ea-4b0e-a824-d0524562b94b	75	0	2024-06-14 01:09:53.922974	bed5e2a7-5cd1-4f7f-b6eb-28b13e25f468
 7b4fe5d1-d396-4934-95ad-1444d5667feb	60	0	2024-06-14 01:10:03.713354	6ac8402f-7c18-4101-b844-a772f2d604d0
 faf1f174-e094-4277-b38b-4beb76011cff	95	0	2024-06-14 01:10:16.918772	af330f3f-d21f-4374-85d5-f112d8475b80
+4c61825b-98b5-4fca-9a83-bea1e1aa136a	48	0	2024-06-14 08:35:58.090949	f0cd9953-b7ff-4bde-a16f-e91527794191
+8fe1ae47-1587-49ba-85f1-28d46b02ee35	149	0	2024-06-15 01:32:53.912516	113f8bf1-60e0-47c1-ae3a-f9160ebe01df
 \.
 
 
@@ -101,19 +126,8 @@ faf1f174-e094-4277-b38b-4beb76011cff	95	0	2024-06-14 01:10:16.918772	af330f3f-d2
 --
 
 COPY public.rol (id_rol, nombre) FROM stdin;
-1	admin
 2	ayudante
-\.
-
-
---
--- Data for Name: servicio; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.servicio (id_service, nombre, descripcion) FROM stdin;
-03cd1bbc-9d15-4afe-b114-e18643b6229c	Acceso a Internet	Acceso a internet de alta velocidad
-31bce554-6f0d-498d-ba56-57efce191d71	Impresión de Documentos COLOR	Servicio de impresión  a color
-a915c222-f2f5-4bc9-bcbe-75dedbfca693	Renta de Mesa de Billar	Disfruta de una partida de billar con tus amigos
+1	administrador
 \.
 
 
@@ -122,11 +136,11 @@ a915c222-f2f5-4bc9-bcbe-75dedbfca693	Renta de Mesa de Billar	Disfruta de una par
 --
 
 COPY public.tarifa (id_tarifa, precio_base, unidad_facturacion, "servicioIdService") FROM stdin;
-e057338e-4e38-4775-ad66-c72fa416bd5b	$2.00	HORA	03cd1bbc-9d15-4afe-b114-e18643b6229c
-d809aaa7-26ed-4a27-b2d5-34e76c3dfb8c	$15.00	DIA	03cd1bbc-9d15-4afe-b114-e18643b6229c
-c2cf4b96-a08a-4c20-ae08-f78f14b0c788	$0.10	UNIDAD	31bce554-6f0d-498d-ba56-57efce191d71
 cf1fea43-5014-4156-a6a0-7362ce5ef065	$30.00	HORA	a915c222-f2f5-4bc9-bcbe-75dedbfca693
 43ac7bb1-5df3-444c-b846-cf484c40a04d	$15.00	FRACCION	a915c222-f2f5-4bc9-bcbe-75dedbfca693
+9baf11e8-b513-402e-818b-13122c9e11fc	$1.00	FRACCION	03cd1bbc-9d15-4afe-b114-e18643b6229c
+ada83f61-4be1-493e-9a65-cf07a5ed75a3	$2.00	HORA	03cd1bbc-9d15-4afe-b114-e18643b6229c
+96797a9c-9025-4a34-bb91-ec8e109d6ac0	$15.00	HORA	aebd1b90-95cc-4b3c-97a6-fdd8e7ae50ad
 \.
 
 
@@ -135,6 +149,8 @@ cf1fea43-5014-4156-a6a0-7362ce5ef065	$30.00	HORA	a915c222-f2f5-4bc9-bcbe-75dedbf
 --
 
 COPY public.usuario (id_usuario, nombres, apellidos, direccion, genero, telefono, email, password, "idRolIdRol") FROM stdin;
+bc821d68-b47b-4701-b2e4-238b61f85027	N4ndo	Ramirez	Dirección del usuario	M	123456789	usuario@example.com	$2b$10$JBroZCbJR8gPlMjq7MJx3uxvLJR/0pQVi6REyNGvAEB0rx1gaThcu	1
+120d862b-26dd-4304-8f7e-e7017074ce5a	Juanito	Alcachofa	Dirección del usuario	M	123456789	ayudante@example.com	$2b$10$VKQW2Ux73MXaL3VjoVMEIO8p19nY821gZHWnXAEDKs1HrMphAwNIi	2
 \.
 
 
