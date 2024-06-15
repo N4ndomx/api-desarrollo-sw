@@ -96,6 +96,7 @@ export class CuentasService {
             cantidad: res.cantidad,
             fecha_registro: res.fecha_registro,
             product: res.product,
+            pagado: undefined,
             cuenta: undefined,
           });
         }
@@ -167,106 +168,152 @@ export class CuentasService {
   async pagar_soloProductos(cuentaId: string) {
     const cuenta = await this.cuentaRepository.findOne({
       where: { id_cuenta: cuentaId, estado: Estado_Cuenta.ACTIVA },
-      relations: { productos: true },
+      relations: { productos: true, servicios: true },
     });
 
-    if (!cuenta) {
-      throw new Error('Cuenta No encontrada');
+    const queryRunner = this.cuentaRepository.manager.connection.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      if (!cuenta) {
+        throw new Error('Cuenta No encontrada');
+      }
+
+      const productosNoPagados = cuenta.productos.filter(productoCuenta => !productoCuenta.pagado);
+
+      const totalProductos = productosNoPagados.reduce((total, productoCuenta) => {
+        const price_plain = productoCuenta.product.precio.toString().replace('$', '');
+        return total + (+price_plain) * productoCuenta.cantidad;
+      }, 0);
+
+      const informe = await Promise.all(productosNoPagados.map(async (productoCuenta) => {
+        productoCuenta.pagado = true;
+        await queryRunner.manager.save(productoCuenta);
+        return {
+          producto: productoCuenta.product.nombre,
+          cantidad: productoCuenta.cantidad,
+          precio_unitario: productoCuenta.product.precio,
+          total: "$" + (+productoCuenta.product.precio.toString().replace('$', '') * productoCuenta.cantidad).toFixed(2),
+        };
+      }));
+      const serNoPagados = cuenta.servicios.filter(servCuenta => !servCuenta.pagado);
+      console.log(serNoPagados)
+      if (serNoPagados.length == 0) {
+        cuenta.estado = Estado_Cuenta.COBRADA
+        await queryRunner.manager.save(cuenta)
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        titular: cuenta.titular,
+        concepto: 'Pago de Productos',
+        total: "$" + totalProductos.toFixed(2),
+        detalle: informe,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error(error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    } finally {
+      await queryRunner.release();
     }
-
-    const totalProductos = cuenta.productos.reduce((total, productoCuenta) => {
-      const price_plain = productoCuenta.product.precio.toString().replace('$', '');
-
-      return total + (+price_plain) * productoCuenta.cantidad;
-    }, 0);
-
-    const informe = cuenta.productos.map(productoCuenta => ({
-
-      producto: productoCuenta.product.nombre,
-      cantidad: productoCuenta.cantidad,
-      precio_unitario: productoCuenta.product.precio,
-      total: "$" + (+productoCuenta.product.precio.toString().replace('$', '') * productoCuenta.cantidad).toFixed(2),
-    }));
-
-    return {
-      titular: cuenta.titular,
-      concepto: 'Pago de Productos',
-      total: "$" + totalProductos.toFixed(2),
-      detalle: informe,
-    };
   }
+
   async pagar_soloServicios(cuentaId: string) {
     const cuenta = await this.cuentaRepository.findOne({
       where: { id_cuenta: cuentaId, estado: Estado_Cuenta.ACTIVA },
-      relations: { servicios: { servico: { tarifas: true } } },
+      relations: { servicios: { servico: { tarifas: true } }, productos: true },
     });
 
-    if (!cuenta) {
-      throw new Error('Cuenta No encontrada');
-    }
 
-    const calcularCostoServicio = (cuentaServicio) => {
-      const tarifas = cuentaServicio.servico.tarifas;
-      let costoServicio = 0;
+    const queryRunner = this.cuentaRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-      // const inicio = new Date(cuentaServicio.fecha_inicio_servicio);
-      // const fin = new Date(); // Asumiendo que este es el momento actual
-      const inicio = new Date(); // Fecha y hora actual
-      const fin = new Date(inicio.getTime() + 60 * 60 * 1000); // Agregar 10 minutos
-      const diferenciaHoras = (fin.getTime() - inicio.getTime()) / (1000 * 60 * 60);
-      const diferenciaMinutos = (fin.getTime() - inicio.getTime()) / (1000 * 60);
+    try {
+      if (!cuenta) {
+        throw new Error('Cuenta No encontrada');
+      }
+      const calcularCostoServicio = (cuentaServicio) => {
+        const tarifas = cuentaServicio.servico.tarifas;
+        let costoServicio = 0;
+        //  test _>mtd
+        // const inicio = new Date(); // Fecha y hora actual
+        // const fin = new Date(inicio.getTime() + 60 * 60 * 1000); // Agregar 10 minutos
 
-      const tarifaHora = tarifas.find(t => t.unidad_facturacion === 'HORA');
-      const tarifaFraccion = tarifas.find(t => t.unidad_facturacion === 'FRACCION');
+        const inicio = new Date(cuentaServicio.fecha_inicio_servicio);
+        const fin = new Date(); // Asumiendo que este es el momento actual
 
-      if (tarifaFraccion) {
-        const fracciones = Math.ceil(diferenciaMinutos / 30);
-        costoServicio = fracciones * parseFloat(tarifaFraccion.precio_base.toString().replace('$', ''));
-      } else if (tarifaHora) {
-        costoServicio = Math.ceil(diferenciaHoras) * parseFloat(tarifaHora.precio_base.toString().replace('$', ''));
+        const diferenciaHoras = (fin.getTime() - inicio.getTime()) / (1000 * 60 * 60);
+        const diferenciaMinutos = (fin.getTime() - inicio.getTime()) / (1000 * 60);
+
+        const tarifaHora = tarifas.find(t => t.unidad_facturacion === 'HORA');
+        const tarifaFraccion = tarifas.find(t => t.unidad_facturacion === 'FRACCION');
+
+        if (tarifaFraccion) {
+          const fracciones = Math.ceil(diferenciaMinutos / 30);
+          costoServicio = fracciones * parseFloat(tarifaFraccion.precio_base.toString().replace('$', ''));
+        } else if (tarifaHora) {
+          costoServicio = Math.ceil(diferenciaHoras) * parseFloat(tarifaHora.precio_base.toString().replace('$', ''));
+        }
+
+        return { costoServicio, diferenciaHoras, diferenciaMinutos };
+      };
+
+      const serNoPagados = cuenta.servicios.filter(serCuenta => !serCuenta.pagado);
+      const totalServicios = serNoPagados.reduce((total, cuentaServicio) => {
+        const { costoServicio } = calcularCostoServicio(cuentaServicio);
+        return total + costoServicio;
+      }, 0);
+
+      const proNoPagados = cuenta.productos.filter(proCuenta => !proCuenta.pagado);
+      if (proNoPagados.length === 0) {
+        cuenta.estado = Estado_Cuenta.COBRADA;
+        await queryRunner.manager.save(cuenta);
       }
 
-      return { costoServicio, diferenciaHoras, diferenciaMinutos };
-    };
+      const informe = await Promise.all(serNoPagados.map(async (cuentaServicio) => {
+        const { costoServicio, diferenciaHoras, diferenciaMinutos } = calcularCostoServicio(cuentaServicio);
+        const horas = Math.floor(diferenciaHoras);
+        const minutos = Math.floor(diferenciaMinutos % 60);
 
-    const totalServicios = cuenta.servicios.reduce((total, cuentaServicio) => {
-      const { costoServicio } = calcularCostoServicio(cuentaServicio);
-      return total + costoServicio;
-    }, 0);
+        cuentaServicio.pagado = true;
+        await queryRunner.manager.save(cuentaServicio);
 
-    const informe = cuenta.servicios.map(cuentaServicio => {
-      const { costoServicio, diferenciaHoras, diferenciaMinutos } = calcularCostoServicio(cuentaServicio);
-      const horas = Math.floor(diferenciaHoras);
-      const minutos = diferenciaMinutos % 60;
+        return {
+          servicio: cuentaServicio.servico.nombre,
+          tiempo_utilizacion: `${horas} horas ${minutos} minutos`,
+          precio_unitario: cuentaServicio.servico.tarifas.map(tarifa => ({
+            unidad: tarifa.unidad_facturacion,
+            precio: parseFloat(tarifa.precio_base.toString().replace('$', '')).toFixed(2)
+          })),
+          total: costoServicio.toFixed(2)
+        };
+      }));
+
+      await queryRunner.commitTransaction();
 
       return {
-        servicio: cuentaServicio.servico.nombre,
-        tiempo_utilizacion: `${horas} horas ${minutos} minutos`,
-        precio_unitario: cuentaServicio.servico.tarifas.map(tarifa => ({
-          unidad: tarifa.unidad_facturacion,
-          precio: parseFloat(tarifa.precio_base.toString().replace('$', '')).toFixed(2)
-        })),
-        total: costoServicio.toFixed(2)
+        titular: cuenta.titular,
+        concepto: 'Pago de Servicios',
+        total: totalServicios.toFixed(2),
+        detalle: informe,
       };
-    });
-
-    return {
-      titular: cuenta.titular,
-      concepto: 'Pago de Servicios',
-      total: totalServicios.toFixed(2),
-      detalle: informe,
-    };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error(error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    } finally {
+      await queryRunner.release();
+    }
   }
 
 
-
-
-
-
-
-
   async findAll() {
-    await this.cuentaRepository.find({ where: { estado: Estado_Cuenta.ACTIVA } })
+    return await this.cuentaRepository.find({ where: { estado: Estado_Cuenta.ACTIVA } })
   }
 
   findOne(id: number) {

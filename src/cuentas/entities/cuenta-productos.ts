@@ -12,6 +12,9 @@ export class Cuenta_Producto {
     product: ProductoSchema
     @Column('int')
     cantidad: number
+    @Column('boolean', { default: false })
+    pagado: boolean
     @CreateDateColumn()
     fecha_registro: string
+
 }

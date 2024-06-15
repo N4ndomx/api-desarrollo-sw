@@ -10,6 +10,8 @@ export class Cuenta_Servicio {
     cuenta: Cuenta
     @ManyToOne(() => Servicio, { eager: true })
     servico: Servicio
+    @Column('boolean', { default: false })
+    pagado: boolean
     @CreateDateColumn()
     fecha_inicio_servicio: string
 }
