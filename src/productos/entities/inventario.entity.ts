@@ -7,26 +7,25 @@ export class ProductoInventario {
 
     stock_min: number;
 
-    stock_maximo: number;
-
     create_at: Date;
 
     modified_at: Date;
 
     private producto: Producto
 
-    constructor(stock: number, stock_min: number, stock_maximo: number, producto: Producto) {
+    constructor(stock: number, stock_min: number, producto: Producto) {
         this.stock = stock
         this.stock_min = stock_min
-        this.stock_maximo = stock_maximo
         this.producto = producto
     }
 
     // Método para restar la cantidad vendida del stock
-    vender(cantidad: number): void {
+    vender(cantidad: number): boolean {
         if (cantidad <= this.stock) {
             this.stock -= cantidad;
-            console.log(`Se vendieron ${cantidad} unidades de ${this.producto.nombre}`);
+            console.log(`Se pueden vender ${cantidad} unidades`);
+            return true
+
         } else {
             throw new Error(`No hay suficientes unidades de ${this.producto.nombre} en stock`);
         }

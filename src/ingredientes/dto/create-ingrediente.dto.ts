@@ -20,8 +20,5 @@ export class CreateIngredienteDto {
     @Min(0)
     stock_min: number;
 
-    @IsNotEmpty()
-    @IsNumber()
-    @Min(0)
-    stock_maximo: number;
+
 }

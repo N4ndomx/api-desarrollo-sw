@@ -23,9 +23,6 @@ export class Ingrediente {
     @Column('int')
     stock_min: number;
 
-    @Column('int')
-    stock_maximo: number;
-
     @CreateDateColumn()
     create_at: Date;
 
