@@ -15,7 +15,7 @@ export class TypeOrmConfig implements TypeOrmOptionsFactory {
       autoLoadEntities: true,
       synchronize: true,
       extra: {
-        ssl: false,
+        ssl: true,
         sslmode: 'require',
       },
       // migrations: ["dist/migrations/*.migration.ts"],
