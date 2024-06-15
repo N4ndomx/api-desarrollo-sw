@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe } from '@nestjs/common';
 import { CuentasService } from './cuentas.service';
 import { CreateCuentaDto } from './dto/create-cuenta.dto';
 import { UpdateCuentaDto } from './dto/update-cuenta.dto';
@@ -21,6 +21,19 @@ export class CuentasController {
   agregarServ(@Body() addService: AgregarServiciosDTO) {
     return this.cuentasService.agregarServicio(addService);
   }
+
+  @Get('pagar/p/:idcuenta')
+  pagar_soloProductos(@Param('idcuenta', ParseUUIDPipe) idcuenta: string) {
+    return this.cuentasService.pagar_soloProductos(idcuenta);
+  }
+
+  @Get('pagar/s/:idcuenta')
+  pagar_soloServic(@Param('idcuenta', ParseUUIDPipe) idcuenta: string) {
+    return this.cuentasService.pagar_soloServicios(idcuenta);
+  }
+
+
+
   @Get()
   findAll() {
     return this.cuentasService.findAll();

@@ -28,7 +28,8 @@ import { CuentasModule } from './cuentas/cuentas.module';
     ServiciosModule,
     ProductosModule,
     IngredientesModule,
-    CuentasModule],
+    CuentasModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

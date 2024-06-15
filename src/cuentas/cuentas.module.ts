@@ -12,5 +12,6 @@ import { Cuenta_Servicio } from './entities/cuenta-servicio';
   imports: [TypeOrmModule.forFeature([Cuenta, Cuenta_Producto, Cuenta_Servicio]), ProductosModule, IngredientesModule],
   controllers: [CuentasController],
   providers: [CuentasService],
+  exports: [CuentasService, TypeOrmModule],
 })
 export class CuentasModule { }
