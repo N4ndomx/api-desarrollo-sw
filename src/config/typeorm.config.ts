@@ -14,7 +14,10 @@ export class TypeOrmConfig implements TypeOrmOptionsFactory {
       username: process.env.DATABASE_USERNAME,
       autoLoadEntities: true,
       synchronize: true,
-
+      extra: {
+        ssl: false,
+        sslmode: 'require',
+      },
       // migrations: ["dist/migrations/*.migration.ts"],
     };
   }
