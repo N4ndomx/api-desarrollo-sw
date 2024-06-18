@@ -162,14 +162,20 @@ export class ProductosService {
             producto: producto
           });
           await queryRunner.manager.save(productoIngrediente);
+
         }
 
         console.log("actualizo producto prepa");
       } else {
+        console.log(producto)
+        const regex = /^[0-9]+$/;
+        if (!regex.test(producto.SKU)) {
+          throw new BadRequestException('Este producto no cuenta con la propiedad "stock"')
+        }
         const inventarioProducto = await queryRunner.manager.findOneBy(ProductoInventarioShema, {
           producto: { id_producto: id }
         })
-        inventarioProducto.stock = stock ? stock : inventarioProducto.stock
+        inventarioProducto.stock = stock ? inventarioProducto.stock + stock : inventarioProducto.stock
         inventarioProducto.stock_min = stock_min ? stock_min : inventarioProducto.stock_min
         await queryRunner.manager.save(inventarioProducto);
       }
@@ -177,6 +183,10 @@ export class ProductosService {
       await queryRunner.manager.save(producto);
       await queryRunner.commitTransaction();
       console.log("Producto actualizado correctamente");
+      return {
+        status: "ok",
+        mensaje: "Producto actualizado correctamente"
+      }
     } catch (error) {
       await queryRunner.rollbackTransaction();
       console.log(error);
