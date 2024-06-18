@@ -326,6 +326,9 @@ export class CuentasService {
 
   async update(id: string, updateCuentaDto: UpdateCuentaDto) {
     const cuenta = await this.findOne(id)
+    if (cuenta.estado === Estado_Cuenta.CANCELADA) {
+      throw new BadRequestException("La cuenta esta Cancelada")
+    }
     await this.cuentaRepository.update(cuenta.id_cuenta, { titular: updateCuentaDto.nombre_titular })
 
     return { status: "ok" };
@@ -333,6 +336,9 @@ export class CuentasService {
 
   async remove(id: string) {
     const cuenta = await this.findOne(id)
+    if (cuenta.estado === Estado_Cuenta.CANCELADA) {
+      throw new BadRequestException("La cuenta ya esta Cancelada")
+    }
     cuenta.estado = Estado_Cuenta.CANCELADA
     await this.cuentaRepository.save(cuenta)
     return cuenta
