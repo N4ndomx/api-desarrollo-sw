@@ -316,15 +316,25 @@ export class CuentasService {
     return await this.cuentaRepository.find({ where: { estado: Estado_Cuenta.ACTIVA } })
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} cuenta`;
+  async findOne(id: string) {
+    const cuenta = await this.cuentaRepository.findOneBy({ id_cuenta: id })
+    if (!cuenta) {
+      throw new BadRequestException('Usuario no encontrado ')
+    }
+    return cuenta
   }
 
-  update(id: number, updateCuentaDto: UpdateCuentaDto) {
-    return `This action updates a #${id} cuenta`;
+  async update(id: string, updateCuentaDto: UpdateCuentaDto) {
+    const cuenta = await this.findOne(id)
+    await this.cuentaRepository.update(cuenta.id_cuenta, { titular: updateCuentaDto.nombre_titular })
+
+    return { status: "ok" };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} cuenta`;
+  async remove(id: string) {
+    const cuenta = await this.findOne(id)
+    cuenta.estado = Estado_Cuenta.CANCELADA
+    await this.cuentaRepository.save(cuenta)
+    return cuenta
   }
 }

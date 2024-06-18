@@ -40,17 +40,17 @@ export class CuentasController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.cuentasService.findOne(+id);
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.cuentasService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCuentaDto: UpdateCuentaDto) {
-    return this.cuentasService.update(+id, updateCuentaDto);
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateCuentaDto: UpdateCuentaDto) {
+    return this.cuentasService.update(id, updateCuentaDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.cuentasService.remove(+id);
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.cuentasService.remove(id);
   }
 }

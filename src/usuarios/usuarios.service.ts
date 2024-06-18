@@ -63,11 +63,20 @@ export class UsuariosService {
 
     return rol
   }
-  update(id: number, updateUsuarioDto: UpdateUsuarioDto) {
-    return `This action updates a #${id} usuario`;
+  async update(id: string, updateUsuarioDto: UpdateUsuarioDto) {
+    const cuenta = await this.findOne(id)
+    const { id_rol, ...data } = updateUsuarioDto
+    const rol = await this.findRol(id_rol)
+    await this.userRepo.update(cuenta.id_usuario, {
+      ...data,
+      id_rol: rol
+    })
+    return { status: "ok" };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} usuario`;
+  async remove(id: string) {
+    const cuenta = await this.findOne(id)
+    await this.userRepo.delete(cuenta.id_usuario)
+    return cuenta
   }
 }
